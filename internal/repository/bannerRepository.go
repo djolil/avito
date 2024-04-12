@@ -1,12 +1,16 @@
 package repository
 
 import (
+	"avito/internal/apperror"
 	"avito/internal/model"
 	"database/sql"
+	"errors"
+	"fmt"
 
 	t "avito/internal/jet/table"
 
 	j "github.com/go-jet/jet/v2/postgres"
+	"github.com/go-jet/jet/v2/qrm"
 )
 
 type Banner struct {
@@ -33,45 +37,58 @@ func (r *Banner) GetByTagAndFeature(tagID, featureID int) (*model.Banner, error)
 	err := stmt.Query(r.db, &b)
 
 	if err != nil {
-		return nil, err
+		if errors.Is(err, qrm.ErrNoRows) {
+			return nil, fmt.Errorf("no rows in result set [banner repository ~ GetByTagAndFeature]: %w", apperror.ErrNotFound)
+		}
+		return nil, fmt.Errorf("undefined error [banner repository ~ GetByTagAndFeature]: %w", apperror.ErrInternalServer)
 	}
+
 	return &b, nil
 }
 
 func (r *Banner) GetManyByTagOrFeature(tagID, featureID, limit, offset int) ([]model.Banner, error) {
-	stmt := j.SELECT(
-		t.Banner.AllColumns,
-		t.Tag.ID,
+	Sub := j.SELECT(
+		t.Banner.ID,
+	).DISTINCT(
+		t.Banner.ID,
 	).FROM(
 		t.Banner.
-			INNER_JOIN(t.BannerTag, t.Banner.ID.EQ(t.BannerTag.BannerID)).
-			INNER_JOIN(t.Tag, t.BannerTag.TagID.EQ(t.Tag.ID)),
+			INNER_JOIN(t.BannerTag, t.Banner.ID.EQ(t.BannerTag.BannerID)),
 	).WHERE(
-		(t.Banner.FeatureID.EQ(j.Int(int64(featureID))).
-			OR(j.Int(int64(featureID)).EQ(j.Int(0)))).
-			AND(
-				j.EXISTS(
-					j.SELECT(j.Int(1)).FROM(
-						t.BannerTag,
-					).WHERE(
-						t.BannerTag.BannerID.EQ(t.Banner.ID).
-							AND(t.BannerTag.TagID.EQ(j.Int(int64(tagID))).
-								OR(j.Int(int64(tagID)).EQ(j.Int(0)))),
-					),
-				),
-			),
+		(t.Banner.FeatureID.EQ(j.Int(int64(featureID))).OR(
+			j.Int(int64(featureID)).EQ(j.Int(0)),
+		)).AND(
+			t.BannerTag.TagID.EQ(j.Int(int64(tagID))).OR(
+				j.Int(int64(tagID)).EQ(j.Int(0))),
+		),
 	).LIMIT(
 		int64(limit),
 	).OFFSET(
 		int64(offset),
+	).AsTable("sub")
+
+	SubID := t.Banner.ID.From(Sub)
+
+	stmt := j.SELECT(
+		t.Banner.AllColumns,
+		t.Tag.ID,
+	).FROM(
+		Sub.
+			INNER_JOIN(t.Banner, SubID.EQ(t.Banner.ID)).
+			INNER_JOIN(t.BannerTag, t.Banner.ID.EQ(t.BannerTag.BannerID)).
+			INNER_JOIN(t.Tag, t.BannerTag.TagID.EQ(t.Tag.ID)),
 	)
 
 	var bs []model.Banner
 	err := stmt.Query(r.db, &bs)
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("undefined error [banner repository ~ GetManyByTagOrFeature]: %w", apperror.ErrInternalServer)
 	}
+	if len(bs) == 0 {
+		return nil, fmt.Errorf("no rows in result set [banner repository ~ GetManyByTagOrFeature]: %w", apperror.ErrNotFound)
+	}
+
 	return bs, nil
 }
 
@@ -90,7 +107,7 @@ func (r *Banner) Create(b *model.Banner, tagIDs []uint32) (int, error) {
 
 	if err != nil || b.ID == 0 {
 		tx.Rollback()
-		return -1, err
+		return -1, fmt.Errorf("undefined error while inserting banner [banner repository ~ Create]: %w", apperror.ErrInternalServer)
 	}
 
 	bts := make([]model.BannerTag, len(tagIDs))
@@ -109,7 +126,7 @@ func (r *Banner) Create(b *model.Banner, tagIDs []uint32) (int, error) {
 
 	if err != nil {
 		tx.Rollback()
-		return -1, err
+		return -1, fmt.Errorf("undefined error while inserting banner tags [banner repository ~ Create]: %w", apperror.ErrInternalServer)
 	}
 
 	tx.Commit()
@@ -131,7 +148,7 @@ func (r *Banner) Update(b *model.Banner, bts []model.BannerTag) error {
 
 	if err != nil {
 		tx.Rollback()
-		return err
+		return fmt.Errorf("undefined error while updating banner [banner repository ~ Update]: %w", apperror.ErrInternalServer)
 	}
 
 	delStmt := t.BannerTag.DELETE().WHERE(
@@ -142,7 +159,7 @@ func (r *Banner) Update(b *model.Banner, bts []model.BannerTag) error {
 
 	if err != nil {
 		tx.Rollback()
-		return err
+		return fmt.Errorf("undefined error while removing banner tags [banner repository ~ Update]: %w", apperror.ErrInternalServer)
 	}
 
 	insStmt := t.BannerTag.INSERT(
@@ -155,7 +172,7 @@ func (r *Banner) Update(b *model.Banner, bts []model.BannerTag) error {
 
 	if err != nil {
 		tx.Rollback()
-		return err
+		return fmt.Errorf("undefined error while inserting banner tags [banner repository ~ Update]: %w", apperror.ErrInternalServer)
 	}
 
 	tx.Commit()
@@ -170,7 +187,7 @@ func (r *Banner) DeleteByID(id int) error {
 	_, err := stmt.Exec(r.db)
 
 	if err != nil {
-		return err
+		return fmt.Errorf("undefined error [banner repository ~ DeleteByID]: %w", apperror.ErrInternalServer)
 	}
 	return nil
 }
