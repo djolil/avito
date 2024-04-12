@@ -16,6 +16,11 @@ type BannerHandler interface {
 	Delete(ctx *gin.Context)
 }
 
+type UserHandler interface {
+	Register(ctx *gin.Context)
+	Login(ctx *gin.Context)
+}
+
 type HttpRouter struct {
 	router *gin.Engine
 }
@@ -36,7 +41,7 @@ func NewHttpRouter() *HttpRouter {
 	return &HttpRouter{router: router}
 }
 
-func (r *HttpRouter) Register(bannerHandler BannerHandler) {
+func (r *HttpRouter) Register(bannerHandler BannerHandler, userHandler UserHandler) {
 	userBannerRouter := r.router.Group("/user_banner")
 	// ?tag_id=<integer>&feature_id=<integer>&use_last_revision=false
 	userBannerRouter.GET("", bannerHandler.GetByTagAndFeature)
@@ -47,6 +52,10 @@ func (r *HttpRouter) Register(bannerHandler BannerHandler) {
 	bannerRouter.POST("", bannerHandler.Create)
 	bannerRouter.PATCH("/:id", bannerHandler.Update)
 	bannerRouter.DELETE("/:id", bannerHandler.Delete)
+
+	userRouter := r.router.Group("/user")
+	userRouter.POST("/register", userHandler.Register)
+	userRouter.POST("/login", userHandler.Login)
 }
 
 func (r *HttpRouter) Run() error {

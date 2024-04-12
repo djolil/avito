@@ -21,13 +21,16 @@ func main() {
 	}
 
 	bannerRepo := repository.NewBannerRepository(dbConn)
+	userRepo := repository.NewUserRepository(dbConn)
 
 	bannerUsecase := usecase.NewBannerUsecase(bannerRepo)
+	userUsecase := usecase.NewUserUsecase(userRepo)
 
 	bannerHandler := handler.NewBannerHandler(bannerUsecase)
+	userHandler := handler.NewUserHandler(userUsecase)
 
 	router := router.NewHttpRouter()
-	router.Register(bannerHandler)
+	router.Register(bannerHandler, userHandler)
 
 	if err := router.Run(); err != nil {
 		log.Fatal(err)

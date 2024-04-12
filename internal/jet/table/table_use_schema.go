@@ -13,5 +13,8 @@ func UseSchema(schema string) {
 	Banner = Banner.FromSchema(schema)
 	BannerTag = BannerTag.FromSchema(schema)
 	Feature = Feature.FromSchema(schema)
+	Role = Role.FromSchema(schema)
 	Tag = Tag.FromSchema(schema)
+	UserAccount = UserAccount.FromSchema(schema)
+	UserRole = UserRole.FromSchema(schema)
 }
