@@ -1,7 +1,8 @@
 package dto
 
 type BannerResponse struct {
-	Name string `json:"name"`
+	Name     string `json:"name"`
+	IsActive bool   `json:"-"`
 }
 
 type BannerDetailsResponse struct {

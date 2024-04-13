@@ -30,7 +30,8 @@ func (u *Banner) GetByTagAndFeature(tagID, featureID int) (*dto.BannerResponse, 
 		return nil, fmt.Errorf("failed to get banner [banner usecase ~ GetByTagAndFeature]: %w", err)
 	}
 	res := dto.BannerResponse{
-		Name: b.Name,
+		Name:     b.Name,
+		IsActive: b.IsActive,
 	}
 	return &res, nil
 }

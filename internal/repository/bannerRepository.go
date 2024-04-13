@@ -25,6 +25,7 @@ func (r *Banner) GetByTagAndFeature(tagID, featureID int) (*model.Banner, error)
 	stmt := j.SELECT(
 		t.Banner.ID,
 		t.Banner.Name,
+		t.Banner.IsActive,
 	).FROM(
 		t.Banner.
 			INNER_JOIN(t.BannerTag, t.Banner.ID.EQ(t.BannerTag.BannerID)),

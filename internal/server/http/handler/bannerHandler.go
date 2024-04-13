@@ -46,6 +46,12 @@ func (h *Banner) GetByTagAndFeature(ctx *gin.Context) {
 		return
 	}
 
+	isAdmin := ctx.GetBool("is_admin")
+	if !b.IsActive && !isAdmin {
+		ctx.Error(fmt.Errorf("only 'admin' is allowed to see this banner [banner handler ~ GetByTagAndFeature]: %w", apperror.ErrNotFound))
+		return
+	}
+
 	ctx.JSON(http.StatusOK, b)
 }
 
