@@ -12,15 +12,15 @@ import (
 
 func JWTAuth(ctx *gin.Context) {
 	const BearerSchema = "Bearer "
-	header := ctx.GetHeader("Authorization")
+	header := ctx.GetHeader("token")
 
 	if header == "" {
-		ctx.Error(fmt.Errorf("authorization header required [middleware ~ JWTAuth]: %w", apperror.ErrUnauthorized))
+		ctx.Error(fmt.Errorf("token header required [middleware ~ JWTAuth]: %w", apperror.ErrUnauthorized))
 		ctx.Abort()
 		return
 	}
 	if !strings.HasPrefix(header, BearerSchema) {
-		ctx.Error(fmt.Errorf("invalid authorization header [middleware ~ JWTAuth]: %w", apperror.ErrUnauthorized))
+		ctx.Error(fmt.Errorf("invalid token header [middleware ~ JWTAuth]: %w", apperror.ErrUnauthorized))
 		ctx.Abort()
 		return
 	}
@@ -38,5 +38,6 @@ func JWTAuth(ctx *gin.Context) {
 	}
 
 	ctx.Set("user_id", claims.UserID)
+	ctx.Set("is_admin", claims.IsAdmin)
 	ctx.Next()
 }

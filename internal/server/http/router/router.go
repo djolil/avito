@@ -43,12 +43,13 @@ func NewHttpRouter() *HttpRouter {
 
 func (r *HttpRouter) Register(bannerHandler BannerHandler, userHandler UserHandler) {
 	userBannerRouter := r.router.Group("/user_banner")
-	// ?tag_id=<integer>&feature_id=<integer>&use_last_revision=false
-	userBannerRouter.GET("", bannerHandler.GetByTagAndFeature)
+	userBannerRouter.Use(middleware.JWTAuth)
+	userBannerRouter.GET("", bannerHandler.GetByTagAndFeature) // ?tag_id=<integer>&feature_id=<integer>&use_last_revision=false
 
 	bannerRouter := r.router.Group("/banner")
-	// ?feature_id=<integer>&tag_id=<integer>&limit=<integer>&offset=<integer>
-	bannerRouter.GET("", bannerHandler.GetManyByTagOrFeature)
+	bannerRouter.Use(middleware.JWTAuth)
+	bannerRouter.Use(middleware.IsAdmin)
+	bannerRouter.GET("", bannerHandler.GetManyByTagOrFeature) // ?feature_id=<integer>&tag_id=<integer>&limit=<integer>&offset=<integer>
 	bannerRouter.POST("", bannerHandler.Create)
 	bannerRouter.PATCH("/:id", bannerHandler.Update)
 	bannerRouter.DELETE("/:id", bannerHandler.Delete)

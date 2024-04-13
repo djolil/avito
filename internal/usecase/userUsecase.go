@@ -54,7 +54,12 @@ func (u *User) Login(req *dto.UserLoginRequest) (string, error) {
 		return "", fmt.Errorf("wrong password [user usecase ~ Login]: %w", apperror.ErrUnauthorized)
 	}
 
-	token, err := auth.GenerateJWT(user.ID)
+	roles := make([]string, len(user.Roles))
+	for i, r := range user.Roles {
+		roles[i] = r.Name
+	}
+
+	token, err := auth.GenerateJWT(user.ID, roles)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate JWT [user usecase ~ Login]: %w", apperror.ErrInternalServer)
 	}

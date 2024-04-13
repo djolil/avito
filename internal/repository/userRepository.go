@@ -24,8 +24,11 @@ func NewUserRepository(db *sql.DB) *User {
 func (r *User) GetByEmail(email string) (*model.UserAccount, error) {
 	stmt := j.SELECT(
 		t.UserAccount.AllColumns,
+		t.Role.Name,
 	).FROM(
-		t.UserAccount,
+		t.UserAccount.
+			LEFT_JOIN(t.UserRole, t.UserAccount.ID.EQ(t.UserRole.UserID)).
+			LEFT_JOIN(t.Role, t.UserRole.RoleID.EQ(t.Role.ID)),
 	).WHERE(
 		t.UserAccount.Email.EQ(j.String(email)),
 	)
