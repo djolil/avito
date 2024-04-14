@@ -2,7 +2,6 @@ package router
 
 import (
 	"avito/internal/server/http/middleware"
-	"os"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -59,8 +58,12 @@ func (r *HttpRouter) Register(bannerHandler BannerHandler, userHandler UserHandl
 	userRouter.POST("/login", userHandler.Login)
 }
 
-func (r *HttpRouter) Run() error {
-	if err := r.router.Run(os.Getenv("ADDRESS")); err != nil {
+type ConfigHTTPServer struct {
+	Address string `yaml:"address" env-default:"localhost:8080"`
+}
+
+func (r *HttpRouter) Run(cfg *ConfigHTTPServer) error {
+	if err := r.router.Run(cfg.Address); err != nil {
 		return err
 	}
 	return nil

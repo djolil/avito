@@ -15,7 +15,7 @@ type CustomClaims struct {
 	jwt.RegisteredClaims
 }
 
-var JwtKey = []byte(os.Getenv("SECRET"))
+var JwtKey = []byte(os.Getenv("SECRET_KEY"))
 
 func GenerateJWT(userID uint32, roles []string) (string, error) {
 	claims := CustomClaims{

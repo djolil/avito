@@ -1,6 +1,7 @@
 package main
 
 import (
+	"avito/internal/config"
 	"avito/internal/db"
 	"avito/internal/repository"
 	"avito/internal/server/http/handler"
@@ -13,9 +14,16 @@ import (
 )
 
 func main() {
-	LoadEnvironment()
+	curDir, err := os.Getwd()
+	if err != nil {
+		log.Println(err)
+	}
 
-	dbConn, err := db.Connect()
+	LoadEnvironment(curDir)
+
+	cfg := config.MustLoad(curDir)
+
+	dbConn, err := db.Connect(&cfg.Database)
 	if err != nil {
 		log.Fatal("Failed to connect database")
 	}
@@ -32,17 +40,12 @@ func main() {
 	router := router.NewHttpRouter()
 	router.Register(bannerHandler, userHandler)
 
-	if err := router.Run(); err != nil {
+	if err := router.Run(&cfg.HTTPServer); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func LoadEnvironment() {
-	curDir, err := os.Getwd()
-	if err != nil {
-		log.Println(err)
-	}
-
+func LoadEnvironment(curDir string) {
 	if err := godotenv.Load(curDir + "/.env"); err != nil {
 		log.Fatal("Error loading .env file")
 	}
