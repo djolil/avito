@@ -19,7 +19,7 @@ type JWTAuth struct {
 }
 
 type ConfigJWT struct {
-	SecretKey string `yaml:"secret_key"`
+	SecretKey string `yaml:"secret_key" env:"SECRET_KEY"`
 }
 
 func NewJWTAuth(cfg *ConfigJWT) *JWTAuth {

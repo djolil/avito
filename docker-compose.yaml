@@ -1,0 +1,42 @@
+version: '3.9'
+
+services:
+  avito-banner:
+    build: 
+      dockerfile: Dockerfile
+    environment:
+      DATA_SOURCE: "host=pg_db user=postgres password=postgres dbname=postgres sslmode=disable"
+    ports:
+      - "8080:8080"
+    depends_on:
+      - pg_db
+    restart: always
+  pg_db:
+    container_name: pg_db
+    image: postgres:12
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: always
+  migrate:
+    image: gomicro/goose
+    depends_on:
+      - pg_db
+    environment:
+      - GOOSE_DRIVER=postgres
+      - GOOSE_DBSTRING=postgres://postgres:postgres@pg_db:5432/postgres?sslmode=disable
+      - GOOSE_MIGRATION_DIR=/app/migrations
+    volumes:
+      - .:/app
+    command: goose up
+    links:
+      - pg_db
+
+
+volumes:  
+  pgdata: {}

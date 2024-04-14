@@ -15,7 +15,7 @@ type BannerCache struct {
 }
 
 type ConfigCache struct {
-	TTL string `yaml:"ttl"`
+	TTL string `yaml:"ttl" env:"TTL"`
 }
 
 func NewBannerCache(cfg *ConfigCache) (*BannerCache, error) {

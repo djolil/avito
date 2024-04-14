@@ -7,7 +7,7 @@ import (
 )
 
 type ConfigDatabase struct {
-	DataSource string `yaml:"data_source"`
+	DataSource string `yaml:"data_source" env:"DATA_SOURCE"`
 }
 
 func Connect(cfg *ConfigDatabase) (db *sql.DB, err error) {

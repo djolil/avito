@@ -59,7 +59,7 @@ func (r *HttpRouter) Register(bannerHandler BannerHandler, userHandler UserHandl
 }
 
 type ConfigHTTPServer struct {
-	Address string `yaml:"address" env-default:"localhost:8080"`
+	Address string `yaml:"address" env:"ADDRESS" env-default:"0.0.0.0:8080"`
 }
 
 func (r *HttpRouter) Run(cfg *ConfigHTTPServer) error {

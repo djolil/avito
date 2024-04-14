@@ -22,7 +22,7 @@ func main() {
 
 	dbConn, err := db.Connect(&cfg.Database)
 	if err != nil {
-		log.Fatal("Failed to connect database")
+		log.Fatalf("Failed to connect database: %s", err)
 	}
 
 	bannerRepo := repository.NewBannerRepository(dbConn)
