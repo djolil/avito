@@ -3,6 +3,7 @@ package config
 import (
 	"avito/internal/db"
 	"avito/internal/server/http/router"
+	"avito/internal/service"
 	"log"
 	"os"
 
@@ -12,6 +13,7 @@ import (
 type Config struct {
 	HTTPServer router.ConfigHTTPServer `yaml:"http_server"`
 	Database   db.ConfigDatabase       `yaml:"database"`
+	Cache      service.ConfigCache     `yaml:"cache"`
 }
 
 func MustLoad(curDir string) *Config {

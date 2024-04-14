@@ -6,6 +6,7 @@ import (
 	"avito/internal/repository"
 	"avito/internal/server/http/handler"
 	"avito/internal/server/http/router"
+	"avito/internal/service"
 	"avito/internal/usecase"
 	"log"
 	"os"
@@ -31,7 +32,12 @@ func main() {
 	bannerRepo := repository.NewBannerRepository(dbConn)
 	userRepo := repository.NewUserRepository(dbConn)
 
-	bannerUsecase := usecase.NewBannerUsecase(bannerRepo)
+	bannerCache, err := service.NewBannerCache(&cfg.Cache)
+	if err != nil {
+		log.Fatalf("Failed to create service: %s", err)
+	}
+
+	bannerUsecase := usecase.NewBannerUsecase(bannerRepo, bannerCache)
 	userUsecase := usecase.NewUserUsecase(userRepo)
 
 	bannerHandler := handler.NewBannerHandler(bannerUsecase)

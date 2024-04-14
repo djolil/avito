@@ -14,21 +14,43 @@ type BannerRepository interface {
 	DeleteByID(id int) error
 }
 
+type BannerCache interface {
+	Set(tagID, featureID int, banner *model.Banner)
+	Get(tagID, featureID int) (banner *model.Banner, ok bool)
+}
+
 type Banner struct {
-	bannerRepo BannerRepository
+	bannerRepo  BannerRepository
+	bannerCache BannerCache
 }
 
-func NewBannerUsecase(br BannerRepository) *Banner {
+func NewBannerUsecase(br BannerRepository, bc BannerCache) *Banner {
 	return &Banner{
-		bannerRepo: br,
+		bannerRepo:  br,
+		bannerCache: bc,
 	}
 }
 
-func (u *Banner) GetByTagAndFeature(tagID, featureID int) (*dto.BannerResponse, error) {
-	b, err := u.bannerRepo.GetByTagAndFeature(tagID, featureID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get banner [banner usecase ~ GetByTagAndFeature]: %w", err)
+func (u *Banner) GetByTagAndFeature(tagID, featureID int, useLastRevision bool) (*dto.BannerResponse, error) {
+	var (
+		b        *model.Banner
+		hasCache bool
+		err      error
+	)
+
+	if !useLastRevision {
+		b, hasCache = u.bannerCache.Get(tagID, featureID)
 	}
+
+	if !hasCache || useLastRevision {
+		b, err = u.bannerRepo.GetByTagAndFeature(tagID, featureID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get banner [banner usecase ~ GetByTagAndFeature]: %w", err)
+		}
+
+		u.bannerCache.Set(tagID, featureID, b)
+	}
+
 	res := dto.BannerResponse{
 		Name:     b.Name,
 		IsActive: b.IsActive,

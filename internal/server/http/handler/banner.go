@@ -11,7 +11,7 @@ import (
 )
 
 type BannerUsecase interface {
-	GetByTagAndFeature(tagID, featureID int) (*dto.BannerResponse, error)
+	GetByTagAndFeature(tagID, featureID int, useLastRevision bool) (*dto.BannerResponse, error)
 	GetManyByTagOrFeature(tagID, featureID, limit, offset int) ([]dto.BannerDetailsResponse, error)
 	Create(req *dto.BannerCreateRequest) (*dto.BannerCreateResponse, error)
 	Update(id int, req *dto.BannerUpdateRequest) error
@@ -39,8 +39,13 @@ func (h *Banner) GetByTagAndFeature(ctx *gin.Context) {
 		ctx.Error(fmt.Errorf("invalid 'feature_id' parameter [banner handler ~ GetByTagAndFeature]: %w", apperror.ErrBadRequest))
 		return
 	}
+	useLastRevision, err := strconv.ParseBool(ctx.DefaultQuery("use_last_revision", "false"))
+	if err != nil {
+		ctx.Error(fmt.Errorf("invalid 'use_last_revision' parameter [banner handler ~ GetByTagAndFeature]: %w", apperror.ErrBadRequest))
+		return
+	}
 
-	b, err := h.usecase.GetByTagAndFeature(tagID, featureID)
+	b, err := h.usecase.GetByTagAndFeature(tagID, featureID, useLastRevision)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -56,22 +61,22 @@ func (h *Banner) GetByTagAndFeature(ctx *gin.Context) {
 }
 
 func (h *Banner) GetManyByTagOrFeature(ctx *gin.Context) {
-	tagID, err := strconv.Atoi(ctx.Query("tag_id"))
+	tagID, err := strconv.Atoi(ctx.DefaultQuery("tag_id", "0"))
 	if err != nil {
 		ctx.Error(fmt.Errorf("invalid 'tag_id' parameter [banner handler ~ GetManyByTagOrFeature]: %w", apperror.ErrBadRequest))
 		return
 	}
-	featureID, err := strconv.Atoi(ctx.Query("feature_id"))
+	featureID, err := strconv.Atoi(ctx.DefaultQuery("feature_id", "0"))
 	if err != nil {
 		ctx.Error(fmt.Errorf("invalid 'feature_id' parameter [banner handler ~ GetManyByTagOrFeature]: %w", apperror.ErrBadRequest))
 		return
 	}
-	limit, err := strconv.Atoi(ctx.Query("limit"))
+	limit, err := strconv.Atoi(ctx.DefaultQuery("limit", "0"))
 	if err != nil {
 		ctx.Error(fmt.Errorf("invalid 'limit' parameter [banner handler ~ GetManyByTagOrFeature]: %w", apperror.ErrBadRequest))
 		return
 	}
-	offset, err := strconv.Atoi(ctx.Query("offset"))
+	offset, err := strconv.Atoi(ctx.DefaultQuery("offset", "0"))
 	if err != nil {
 		ctx.Error(fmt.Errorf("invalid 'offset' parameter [banner handler ~ GetManyByTagOrFeature]: %w", apperror.ErrBadRequest))
 		return
