@@ -137,6 +137,30 @@ func (r *Banner) Create(b *model.Banner, tagIDs []uint32) (int, error) {
 func (r *Banner) Update(b *model.Banner, bts []model.BannerTag) error {
 	tx, _ := r.db.Begin()
 
+	exStmt := j.SELECT(
+		j.EXISTS(
+			j.SELECT(j.Int(1)).FROM(
+				t.Banner,
+			).WHERE(
+				t.Banner.ID.EQ(j.Int(int64(b.ID))),
+			),
+		).AS("exist"),
+	)
+
+	var res struct {
+		Exist bool `alias:"exist"`
+	}
+	err := exStmt.Query(tx, &res)
+
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("undefined error while checking banner existance [banner repository ~ Update]: %w", apperror.ErrInternalServer)
+	}
+	if !res.Exist {
+		tx.Rollback()
+		return fmt.Errorf("banner not found [banner repository ~ Update]: %w", apperror.ErrNotFound)
+	}
+
 	updStmt := t.Banner.UPDATE(
 		t.Banner.MutableColumns,
 	).MODEL(
@@ -145,7 +169,7 @@ func (r *Banner) Update(b *model.Banner, bts []model.BannerTag) error {
 		t.Banner.ID.EQ(j.Int(int64(b.ID))),
 	)
 
-	_, err := updStmt.Exec(tx)
+	_, err = updStmt.Exec(tx)
 
 	if err != nil {
 		tx.Rollback()
@@ -181,14 +205,43 @@ func (r *Banner) Update(b *model.Banner, bts []model.BannerTag) error {
 }
 
 func (r *Banner) DeleteByID(id int) error {
-	stmt := t.Banner.DELETE().WHERE(
+	tx, _ := r.db.Begin()
+
+	exStmt := j.SELECT(
+		j.EXISTS(
+			j.SELECT(j.Int(1)).FROM(
+				t.Banner,
+			).WHERE(
+				t.Banner.ID.EQ(j.Int(int64(id))),
+			),
+		).AS("exist"),
+	)
+
+	var res struct {
+		Exist bool `alias:"exist"`
+	}
+	err := exStmt.Query(tx, &res)
+
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("undefined error while checking banner existance [banner repository ~ DeleteByID]: %w", apperror.ErrInternalServer)
+	}
+	if !res.Exist {
+		tx.Rollback()
+		return fmt.Errorf("banner not found [banner repository ~ DeleteByID]: %w", apperror.ErrNotFound)
+	}
+
+	delStmt := t.Banner.DELETE().WHERE(
 		t.Banner.ID.EQ(j.Int(int64(id))),
 	)
 
-	_, err := stmt.Exec(r.db)
+	_, err = delStmt.Exec(tx)
 
 	if err != nil {
+		tx.Rollback()
 		return fmt.Errorf("undefined error [banner repository ~ DeleteByID]: %w", apperror.ErrInternalServer)
 	}
+
+	tx.Commit()
 	return nil
 }

@@ -47,16 +47,33 @@ func (r *User) GetByEmail(email string) (*model.UserAccount, error) {
 }
 
 func (r *User) Add(u *model.UserAccount) error {
-	exists, err := r.existsByEmail(u.Email)
+	tx, _ := r.db.Begin()
+
+	exStmt := j.SELECT(
+		j.EXISTS(
+			j.SELECT(j.Int(1)).FROM(
+				t.UserAccount,
+			).WHERE(
+				t.UserAccount.Email.EQ(j.String(u.Email)),
+			),
+		).AS("exist"),
+	)
+
+	var res struct {
+		Exist bool `alias:"exist"`
+	}
+	err := exStmt.Query(tx, &res)
 
 	if err != nil {
-		return fmt.Errorf("failed to check if user exists [user repository ~ Add]: %w", err)
+		tx.Rollback()
+		return fmt.Errorf("undefined error while checking user existance [user repository ~ Add]: %w", apperror.ErrInternalServer)
 	}
-	if exists {
+	if res.Exist {
+		tx.Rollback()
 		return fmt.Errorf("email already exists [user repository ~ Add]: %w", apperror.ErrBadRequest)
 	}
 
-	stmt := t.UserAccount.INSERT(
+	insStmt := t.UserAccount.INSERT(
 		t.UserAccount.FirstName,
 		t.UserAccount.LastName,
 		t.UserAccount.Email,
@@ -66,34 +83,13 @@ func (r *User) Add(u *model.UserAccount) error {
 		u,
 	)
 
-	_, err = stmt.Exec(r.db)
+	_, err = insStmt.Exec(tx)
 
 	if err != nil {
+		tx.Rollback()
 		return fmt.Errorf("undefined error [user repository ~ Add]: %w", apperror.ErrInternalServer)
 	}
 
+	tx.Commit()
 	return nil
-}
-
-func (r *User) existsByEmail(email string) (bool, error) {
-	stmt := j.SELECT(
-		j.EXISTS(
-			j.SELECT(j.Int(1)).FROM(
-				t.UserAccount,
-			).WHERE(
-				t.UserAccount.Email.EQ(j.String(email)),
-			),
-		).AS("exists"),
-	)
-
-	var res struct {
-		Exists bool `alias:"exists"`
-	}
-	err := stmt.Query(r.db, &res)
-
-	if err != nil {
-		return false, fmt.Errorf("undefined error [user repository ~ existsByEmail]: %w", apperror.ErrInternalServer)
-	}
-
-	return res.Exists, nil
 }
