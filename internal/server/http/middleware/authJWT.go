@@ -2,16 +2,30 @@ package middleware
 
 import (
 	"avito/internal/apperror"
-	"avito/internal/auth"
+	"avito/internal/service"
 	"fmt"
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
 )
 
-func JWTAuth(ctx *gin.Context) {
-	const BearerSchema = "Bearer "
+const BearerSchema = "Bearer "
+
+type Authenticator interface {
+	GetClaims(tokenString string) (*service.CustomClaims, error)
+}
+
+type AuthJWT struct {
+	authcator Authenticator
+}
+
+func NewAuthJWT(authcator Authenticator) *AuthJWT {
+	return &AuthJWT{
+		authcator: authcator,
+	}
+}
+
+func (a *AuthJWT) JWTAuth(ctx *gin.Context) {
 	header := ctx.GetHeader("token")
 
 	if header == "" {
@@ -26,13 +40,10 @@ func JWTAuth(ctx *gin.Context) {
 	}
 
 	tokenString := strings.TrimPrefix(header, BearerSchema)
-	claims := auth.CustomClaims{}
 
-	token, err := jwt.ParseWithClaims(tokenString, &claims, func(token *jwt.Token) (interface{}, error) {
-		return auth.JwtKey, nil
-	})
-	if err != nil || !token.Valid {
-		ctx.Error(fmt.Errorf("invalid token [middleware ~ JWTAuth]: %w", apperror.ErrUnauthorized))
+	claims, err := a.authcator.GetClaims(tokenString)
+	if err != nil {
+		ctx.Error(fmt.Errorf("failed to get claims [middleware ~ JWTAuth]: %w", err))
 		ctx.Abort()
 		return
 	}

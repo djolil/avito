@@ -5,24 +5,20 @@ import (
 	"avito/internal/db"
 	"avito/internal/repository"
 	"avito/internal/server/http/handler"
+	"avito/internal/server/http/middleware"
 	"avito/internal/server/http/router"
 	"avito/internal/service"
 	"avito/internal/usecase"
+	"flag"
 	"log"
-	"os"
-
-	"github.com/joho/godotenv"
 )
 
+var configPath = flag.String("config", "./config/config.yaml", "config path")
+
 func main() {
-	curDir, err := os.Getwd()
-	if err != nil {
-		log.Println(err)
-	}
+	flag.Parse()
 
-	LoadEnvironment(curDir)
-
-	cfg := config.MustLoad(curDir)
+	cfg := config.MustLoad(*configPath)
 
 	dbConn, err := db.Connect(&cfg.Database)
 	if err != nil {
@@ -36,23 +32,20 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to create service: %s", err)
 	}
+	jwtAuth := service.NewJWTAuth(&cfg.JWT)
+
+	authJWT := middleware.NewAuthJWT(jwtAuth)
 
 	bannerUsecase := usecase.NewBannerUsecase(bannerRepo, bannerCache)
-	userUsecase := usecase.NewUserUsecase(userRepo)
+	userUsecase := usecase.NewUserUsecase(userRepo, jwtAuth)
 
 	bannerHandler := handler.NewBannerHandler(bannerUsecase)
 	userHandler := handler.NewUserHandler(userUsecase)
 
 	router := router.NewHttpRouter()
-	router.Register(bannerHandler, userHandler)
+	router.Register(bannerHandler, userHandler, authJWT.JWTAuth)
 
 	if err := router.Run(&cfg.HTTPServer); err != nil {
 		log.Fatal(err)
-	}
-}
-
-func LoadEnvironment(curDir string) {
-	if err := godotenv.Load(curDir + "/.env"); err != nil {
-		log.Fatal("Error loading .env file")
 	}
 }

@@ -1,8 +1,11 @@
 http_server:
   address: "localhost:8080"
 
+jwt:
+  secret_key: "MY1GIGA2SECRET3KEY4"
+
 cache:
-  ttl: "1m"
+  ttl: "5m"
 
 database:
   data_source: "host=localhost user=postgres password=123 dbname=avito port=5432 sslmode=disable"

@@ -14,11 +14,10 @@ type Config struct {
 	HTTPServer router.ConfigHTTPServer `yaml:"http_server"`
 	Database   db.ConfigDatabase       `yaml:"database"`
 	Cache      service.ConfigCache     `yaml:"cache"`
+	JWT        service.ConfigJWT       `yaml:"jwt"`
 }
 
-func MustLoad(curDir string) *Config {
-	configPath := curDir + os.Getenv("CONFIG_PATH")
-
+func MustLoad(configPath string) *Config {
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
 		log.Fatalf("Config file does not exist: %s", configPath)
 	}

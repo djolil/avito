@@ -40,13 +40,13 @@ func NewHttpRouter() *HttpRouter {
 	return &HttpRouter{router: router}
 }
 
-func (r *HttpRouter) Register(bannerHandler BannerHandler, userHandler UserHandler) {
+func (r *HttpRouter) Register(bannerHandler BannerHandler, userHandler UserHandler, authMiddleware gin.HandlerFunc) {
 	userBannerRouter := r.router.Group("/user_banner")
-	userBannerRouter.Use(middleware.JWTAuth)
+	userBannerRouter.Use(authMiddleware)
 	userBannerRouter.GET("", bannerHandler.GetByTagAndFeature) // ?tag_id=<integer>&feature_id=<integer>&use_last_revision=false
 
 	bannerRouter := r.router.Group("/banner")
-	bannerRouter.Use(middleware.JWTAuth)
+	bannerRouter.Use(authMiddleware)
 	bannerRouter.Use(middleware.IsAdmin)
 	bannerRouter.GET("", bannerHandler.GetManyByTagOrFeature) // ?feature_id=<integer>&tag_id=<integer>&limit=<integer>&offset=<integer>
 	bannerRouter.POST("", bannerHandler.Create)

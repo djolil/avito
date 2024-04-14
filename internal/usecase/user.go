@@ -15,13 +15,19 @@ type UserRepository interface {
 	Add(u *model.UserAccount) error
 }
 
-type User struct {
-	userRepo UserRepository
+type JWTGenerator interface {
+	GenerateJWT(userID uint32, roles []string) (string, error)
 }
 
-func NewUserUsecase(ur UserRepository) *User {
+type User struct {
+	userRepo     UserRepository
+	jwtGenerator JWTGenerator
+}
+
+func NewUserUsecase(ur UserRepository, jg JWTGenerator) *User {
 	return &User{
-		userRepo: ur,
+		userRepo:     ur,
+		jwtGenerator: jg,
 	}
 }
 
@@ -59,7 +65,7 @@ func (u *User) Login(req *dto.UserLoginRequest) (string, error) {
 		roles[i] = r.Name
 	}
 
-	token, err := auth.GenerateJWT(user.ID, roles)
+	token, err := u.jwtGenerator.GenerateJWT(user.ID, roles)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate JWT [user usecase ~ Login]: %w", apperror.ErrInternalServer)
 	}
